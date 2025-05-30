@@ -43,8 +43,41 @@ func main() {
 
 	// Middleware (as previously defined)
 	e.Use(middleware.Recover())
-	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{ /* ... */ })) // Your existing config
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{ /* ... */ }))                   // Your existing config
+	//e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{ /* ... */ })) // Your existing config
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogStatus:   true,
+		LogURI:      true,
+		LogMethod:   true,
+		LogLatency:  true,
+		LogRemoteIP: true,
+		LogError:    true,
+		HandleError: true, // Required to log errors that occur before reaching the handler
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error { // <-- THIS IS THE IMPORTANT PART
+			// Log non-error requests at Info level
+			level := slog.LevelInfo
+			attrs := []slog.Attr{
+				slog.String("ip", v.RemoteIP),
+				slog.String("method", v.Method),
+				slog.String("uri", v.URI),
+				slog.Int("status", v.Status),
+				slog.Duration("latency", v.Latency),
+			}
+
+			// Log error requests at Error level and include the error message
+			if v.Error != nil {
+				level = slog.LevelError
+				attrs = append(attrs, slog.String("error", v.Error.Error()))
+			}
+
+			// Use the globally set logger (or pass your 'logger' variable if it's in scope)
+			slog.Default().LogAttrs(c.Request().Context(), level, "HTTP request", attrs...)
+			// If your 'logger' variable from main is directly accessible here, you could use:
+			// logger.LogAttrs(c.Request().Context(), level, "HTTP request", attrs...)
+			return nil
+		}, // <-- MAKE SURE THIS FUNCTION AND THE COMMA ARE PRESENT
+	}))
+
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{ /* ... */ })) // Your existing config
 
 	e.GET("/", func(c echo.Context) error {
 		// Test DB connection by pinging (optional here, already done in Connect)
