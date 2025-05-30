@@ -53,7 +53,7 @@ func Connect() error {
 			slog.Warn("Failed to create connection pool", "attempt", i+1, "error", err)
 		}
 		slog.Info("Retrying database connection in 5 seconds...")
-		time.Sleep(5 * second)
+		time.Sleep(5)
 	}
 
 	return fmt.Errorf("unable to connect to database after multiple retries: %w", err)

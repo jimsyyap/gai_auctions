@@ -1,0 +1,33 @@
+# Set your database URL here
+DB_URL=postgres://jim:perfectdays@localhost:5432/gaiauctions?sslmode=disable
+
+# Directory where your migration files live
+MIGRATIONS_DIR=backend/migrations
+
+# Path to the migrate CLI (adjust if you installed it elsewhere)
+MIGRATE=migrate
+
+# Create a new migration: make new name=create_users_table
+new:
+	$(MIGRATE) create -ext sql -dir $(MIGRATIONS_DIR) -seq $(name)
+
+# Apply all up migrations
+migrate-up:
+	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" up
+
+# Rollback the last migration
+migrate-down:
+	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" down 1
+
+# Redo the last migration
+migrate-redo:
+	$(MAKE) migrate-down
+	$(MAKE) migrate-up
+
+# Force a specific version (dangerous)
+force:
+	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" force $(version)
+
+# Drop everything in the DB
+drop:
+	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(DB_URL)" drop -f
